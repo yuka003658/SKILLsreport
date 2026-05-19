@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude・Anthropic・Skill・Artifact 解説レポート</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --paper: #f5f2ec;
+    --accent: #2d4a8a;
+    --accent2: #8a3a2d;
+    --muted: #6b6660;
+    --rule: #c8c3bb;
+    --purple-light: #ede9fa;
+    --purple-mid: #7c6fc4;
+    --teal-light: #e0f4ee;
+    --teal-mid: #2a9d7a;
+    --coral-light: #faeae6;
+    --coral-mid: #c0532e;
+    --gray-light: #eeece8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 60px;
+    border-bottom: 2px solid var(--ink);
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(45,74,138,0.08) 0%, transparent 70%);
+  }
+  .cover-label {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .cover-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    line-height: 1.3;
+    max-width: 700px;
+    margin-bottom: 24px;
+  }
+  .cover-title span {
+    color: var(--accent);
+  }
+  .cover-sub {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+  .cover-meta strong {
+    display: block;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* LAYOUT */
+  .page { max-width: 860px; margin: 0 auto; padding: 72px 48px; }
+  @media (max-width: 640px) { .page { padding: 48px 24px; } }
+
+  /* SECTION HEADERS */
+  .section-num {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 32px 0 12px;
+    color: var(--accent);
+  }
+  p { margin-bottom: 16px; color: #2a2724; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 64px 0;
+  }
+
+  /* CARDS */
+  .card-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 32px 0;
+  }
+  .card {
+    padding: 28px 24px;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+  }
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .card-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .card-body { font-size: 13px; line-height: 1.7; color: var(--muted); }
+  .card.purple { background: var(--purple-light); border-color: var(--purple-mid); }
+  .card.purple .card-label { color: var(--purple-mid); }
+  .card.teal { background: var(--teal-light); border-color: var(--teal-mid); }
+  .card.teal .card-label { color: var(--teal-mid); }
+  .card.coral { background: var(--coral-light); border-color: var(--coral-mid); }
+  .card.coral .card-label { color: var(--coral-mid); }
+  .card.gray { background: var(--gray-light); border-color: var(--rule); }
+  .card.gray .card-label { color: var(--muted); }
+
+  /* COMPARISON TABLE */
+  .compare {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .compare th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+  .compare td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .compare tr:last-child td { border-bottom: none; }
+  .compare tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge.yes { background: var(--teal-light); color: var(--teal-mid); }
+  .badge.no  { background: var(--coral-light); color: var(--coral-mid); }
+
+  /* DIAGRAM SVG */
+  .diagram-wrap {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 32px 24px;
+    margin: 24px 0;
+  }
+
+  /* PULLQUOTE */
+  .pullquote {
+    border-left: 4px solid var(--accent);
+    padding: 16px 24px;
+    margin: 32px 0;
+    background: rgba(45,74,138,0.04);
+  }
+  .pullquote p {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  /* AI COMPANY TABLE */
+  .company-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .company-card {
+    padding: 20px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    text-align: center;
+  }
+  .company-card.highlight {
+    border-color: var(--purple-mid);
+    background: var(--purple-light);
+  }
+  .company-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .company-ai { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .company-feature {
+    font-size: 11px;
+    background: white;
+    padding: 4px 8px;
+    border-radius: 2px;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    display: inline-block;
+  }
+  .company-card.highlight .company-feature {
+    background: white;
+    color: var(--purple-mid);
+    border-color: var(--purple-mid);
+  }
+
+  /* FLOW DIAGRAM */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 28px 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    flex: 1;
+    min-width: 120px;
+    padding: 16px 12px;
+    text-align: center;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .flow-step .step-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .flow-step .step-name { font-weight: 700; }
+  .flow-arrow {
+    font-size: 20px;
+    color: var(--rule);
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .flow-step.active {
+    background: var(--purple-light);
+    border-color: var(--purple-mid);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 2px solid var(--ink);
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-label">解説レポート</div>
+  <h1 class="cover-title">
+    <span>Anthropic</span>・Claude・<br>
+    Skill・Artifact<br>完全理解ガイド
+  </h1>
+  <p class="cover-sub">
+    「Anthropicって何？」「SkillとArtifactの違いは？」<br>
+    今日の会話で出てきた概念を一冊にまとめました。
+  </p>
+  <div class="cover-meta">
+    <div><strong>対象</strong>一般ユーザー向け</div>
+    <div><strong>モデル</strong>Claude Sonnet 4.6</div>
+    <div><strong>作成日</strong>2026年5月</div>
+  </div>
+</div>
+
+<!-- SECTION 1: Anthropic -->
+<div class="page">
+  <div class="section-num">Section 01</div>
+  <h2>Anthropicとは何か</h2>
+
+  <p>
+    Anthropicは、2021年にアメリカで設立されたAI企業です。ChatGPTで有名なOpenAIの元メンバーたちが「AIの安全性をもっと真剣に考えたい」という思いから独立し、設立しました。
+  </p>
+
+  <div class="pullquote">
+    <p>「AIを速く作ること」より「AIを安全に作ること」を最優先にした会社、それがAnthropicです。</p>
+  </div>
+
+  <h3>主なAI企業の比較</h3>
+
+  <div class="company-grid">
+    <div class="company-card">
+      <div class="company-name">OpenAI</div>
+      <div class="company-ai">→ ChatGPT / GPT-4</div>
+      <div class="company-feature">2015年設立</div>
+    </div>
+    <div class="company-card highlight">
+      <div class="company-name">Anthropic</div>
+      <div class="company-ai">→ Claude</div>
+      <div class="company-feature">2021年設立・安全AI研究が軸</div>
+    </div>
+    <div class="company-card">
+      <div class="company-name">Google DeepMind</div>
+      <div class="company-ai">→ Gemini</div>
+      <div class="company-feature">Alphabet傘下</div>
+    </div>
+  </div>
+
+  <p>
+    車メーカーで例えると、OpenAIがトヨタ、AnthropicがHonda、GoogleがNissanのような関係です。それぞれ別の会社・別のシステムで動いているため、一方のツールやファイルが他方で使えることはありません。
+  </p>
+</div>
+
+<hr class="divider" style="max-width:860px; margin: 0 auto;">
+
+<!-- SECTION 2: Artifact vs Skill -->
+<div class="page">
+  <div class="section-num">Section 02</div>
+  <h2>ArtifactとSkillの違い</h2>
+
+  <p>
+    Claudeを使っていると「Artifact」と「Skill」という二つの概念が出てきます。どちらも重要ですが、役割がまったく異なります。
+  </p>
+
+  <div class="card-row">
+    <div class="card coral">
+      <div class="card-label">Artifact（成果物）</div>
+      <div class="card-title">作られたもの</div>
+      <div class="card-body">
+        Claudeが実際に生成して「渡す」ファイルのこと。コード、HTMLページ、Word文書、Markdownレポートなど。ユーザーが見たり、ダウンロードしたりできる。
+      </div>
+    </div>
+    <div class="card teal">
+      <div class="card-label">Skill（スキル）</div>
+      <div class="card-title">作り方マニュアル</div>
+      <div class="card-body">
+        Claudeが作業前に内部で読む「手順書」のこと。サーバー上のファイルとして存在し、ユーザーには見えない。Claudeの出力品質を高めるための裏側の仕組み。
+      </div>
+    </div>
+  </div>
+
+  <h3>フローで見る違い</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-label">Input</div>
+      <div class="step-name">あなたのリクエスト</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">
+      <div class="step-label">Internal</div>
+      <div class="step-name">Skillを読む（非表示）</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="step-label">Process</div>
+      <div class="step-name">Claudeが考える・処理する</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="step-label">Output</div>
+      <div class="step-name">Artifactが生成される</div>
+    </div>
+  </div>
+
+  <h3>一覧比較</h3>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>項目</th>
+        <th>Skill</th>
+        <th>Artifact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>何か</td>
+        <td>作業手順の説明ファイル</td>
+        <td>Claudeが作った成果物</td>
+      </tr>
+      <tr>
+        <td>ユーザーに見える</td>
+        <td><span class="badge no">見えない</span></td>
+        <td><span class="badge yes">見える</span></td>
+      </tr>
+      <tr>
+        <td>ダウンロード可能</td>
+        <td><span class="badge no">不可</span></td>
+        <td><span class="badge yes">可能</span></td>
+      </tr>
+      <tr>
+        <td>誰が用意するか</td>
+        <td>Anthropic / 管理者</td>
+        <td>Claudeが自動生成</td>
+      </tr>
+      <tr>
+        <td>例</td>
+        <td>docxスキル、pptxスキル</td>
+        <td>コード、HTML、Word文書</td>
+      </tr>
+      <tr>
+        <td>タイミング</td>
+        <td>作業の「前」に読む</td>
+        <td>作業の「後」に生まれる</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr class="divider" style="max-width:860px; margin: 0 auto;">
+
+<!-- SECTION 3: Skill詳細 -->
+<div class="page">
+  <div class="section-num">Section 03</div>
+  <h2>Skillの仕組みと使い方</h2>
+
+  <p>
+    SkillはAnthropicのサーバー上の <code style="background:#eee;padding:2px 6px;border-radius:2px;font-size:13px;">/mnt/skills/</code> というフォルダに置かれたテキストファイルです。Claudeは「Wordファイルを作る必要があるな」と判断したとき、自分でそのファイルを読みに行きます。
+  </p>
+
+  <div class="card-row">
+    <div class="card gray">
+      <div class="card-label">docxスキル</div>
+      <div class="card-title">Word文書</div>
+      <div class="card-body">Word文書の正しい作り方・注意点が書かれている</div>
+    </div>
+    <div class="card gray">
+      <div class="card-label">pptxスキル</div>
+      <div class="card-title">スライド</div>
+      <div class="card-body">PowerPointスライドの作り方が書かれている</div>
+    </div>
+    <div class="card gray">
+      <div class="card-label">frontend-designスキル</div>
+      <div class="card-title">Web UI</div>
+      <div class="card-body">質の高いWeb画面の設計ルールが書かれている</div>
+    </div>
+  </div>
+
+  <h3>一般ユーザーはSkillを追加できるか？</h3>
+  <p>
+    <strong>できません。</strong>Skillはサーバー側の設定であり、一般ユーザーが追加・編集できるものではありません。ただし、似た効果を得る方法はあります。
+  </p>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>方法</th>
+        <th>できること</th>
+        <th>難易度</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>カスタム指示（claude.ai設定）</td>
+        <td>毎回の会話の前提を設定できる</td>
+        <td>★☆☆ 簡単</td>
+      </tr>
+      <tr>
+        <td>プロジェクト機能</td>
+        <td>案件・用途ごとに設定・資料を分けて管理</td>
+        <td>★★☆ 普通</td>
+      </tr>
+      <tr>
+        <td>APIでシステムプロンプト</td>
+        <td>Skillに近い詳細な指示を埋め込める</td>
+        <td>★★★ 開発者向け</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pullquote">
+    <p>広告代理店のCDとして使うなら、「プロジェクト機能」でブランド戦略用・キャンペーン用などを分けて作るのが最初の一歩です。</p>
+  </div>
+</div>
+
+<hr class="divider" style="max-width:860px; margin: 0 auto;">
+
+<!-- SECTION 4: 他社との比較 -->
+<div class="page">
+  <div class="section-num">Section 04</div>
+  <h2>ChatGPT・Geminiとの仕組みの違い</h2>
+
+  <p>
+    「事前に読ませる指示・知識で出力品質を上げる」という考え方はどのAIも同じです。ただし実装方法はそれぞれ異なります。
+  </p>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>AI</th>
+        <th>類似機能の名前</th>
+        <th>仕組みの特徴</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Claude</strong>（Anthropic）</td>
+        <td>Skill</td>
+        <td>サーバー上の実ファイルをClaudeが自分で読みに行く。エンジニアリング的アプローチ。</td>
+      </tr>
+      <tr>
+        <td><strong>ChatGPT</strong>（OpenAI）</td>
+        <td>GPTs・カスタムインストラクション</td>
+        <td>システムプロンプトに指示を埋め込む方式が主流。</td>
+      </tr>
+      <tr>
+        <td><strong>Gemini</strong>（Google）</td>
+        <td>Gems</td>
+        <td>同様にプロンプト埋め込み方式が中心。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    重要なのは、<strong>これらは会社ごとに完全に独立したシステム</strong>ということです。AnthropicのSkillはChatGPTでは使えませんし、ChatGPTのGPTsはClaudeでは動きません。トヨタの整備マニュアルをホンダの工場で使えないのと同じです。
+  </p>
+
+  <p>
+    ユーザーに見えないという点は、どのAIでも共通しています。
+  </p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div>Claude・Anthropic・Skill・Artifact 解説レポート</div>
+  <div>Powered by Claude Sonnet 4.6 (Anthropic)</div>
+</footer>
+
+</body>
+</html>
